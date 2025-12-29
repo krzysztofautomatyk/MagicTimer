@@ -24,6 +24,8 @@ namespace MagicTimer
 
         private int _remindCount;
 
+        private const double CompactHeight = 120;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -60,6 +62,7 @@ namespace MagicTimer
 
             SetIdleState();
             UpdateStartStopButton();
+            UpdateCompactMode();
         }
 
         private void StartStopButton_Click(object sender, RoutedEventArgs e)
@@ -326,6 +329,20 @@ namespace MagicTimer
             {
                 // best-effort
             }
+        }
+
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdateCompactMode();
+        }
+
+        private void UpdateCompactMode()
+        {
+            var isCompact = ActualHeight < CompactHeight;
+
+            Progress.Visibility = isCompact ? Visibility.Collapsed : Visibility.Visible;
+            ControlsPanel.Visibility = isCompact ? Visibility.Collapsed : Visibility.Visible;
+            SoundPathText.Visibility = isCompact ? Visibility.Collapsed : Visibility.Visible;
         }
     }
 }

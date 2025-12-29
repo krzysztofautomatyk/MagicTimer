@@ -5,76 +5,77 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MagicTimer"
         mc:Ignorable="d"
-        Title="MagicTimer 1.0" Height="260" Width="520"
+        Title="MagicTimer 1.0"
+        MinWidth="160" MinHeight="80"
+        Width="520" Height="260"
         Topmost="True"
-        ResizeMode="NoResize"
+        ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen"
-        Background="#0B0E14">
+        Background="#0B0E14"
+        SizeChanged="Window_SizeChanged">
 
-    <Grid Margin="16">
-        <Grid.Resources>
-            <SolidColorBrush x:Key="StartBrush" Color="#2EA043"/>
-            <SolidColorBrush x:Key="StopBrush" Color="#D73A49"/>
-            <SolidColorBrush x:Key="AccentBrush" Color="#58A6FF"/>
+    <Window.Resources>
+        <SolidColorBrush x:Key="StartBrush" Color="#2EA043"/>
+        <SolidColorBrush x:Key="StopBrush" Color="#D73A49"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#58A6FF"/>
 
-            <Style TargetType="Button">
-                <Setter Property="Padding" Value="10,6"/>
-                <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Foreground" Value="White"/>
-                <Setter Property="Background" Value="#30363D"/>
-            </Style>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#30363D"/>
+        </Style>
 
-            <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
-            </Style>
-        </Grid.Resources>
+        <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+        </Style>
+    </Window.Resources>
 
+    <Grid Margin="8">
         <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="12"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="12"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="12"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="#0F172A" BorderBrush="#223" BorderThickness="1" CornerRadius="12" Padding="16">
-            <TextBlock x:Name="TimeText"
-                       Text="00:00"
-                       Foreground="#E6EDF3"
-                       FontFamily="Consolas"
-                       FontWeight="SemiBold"
-                       FontSize="72"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"/>
-        </Border>
+        <!-- Główny panel z czasem - skaluje się z oknem -->
+        <Viewbox Grid.Row="0" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Border Background="#0F172A" BorderBrush="#223" BorderThickness="1" CornerRadius="8" Padding="12,8">
+                <TextBlock x:Name="TimeText"
+                           Text="00:00"
+                           Foreground="#E6EDF3"
+                           FontFamily="Consolas"
+                           FontWeight="SemiBold"
+                           FontSize="72"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+            </Border>
+        </Viewbox>
 
-        <ProgressBar Grid.Row="2" x:Name="Progress" Height="18" Minimum="0" Maximum="100" Value="0"
+        <!-- Kontrolki - widoczne tylko gdy okno > 200px wysokości -->
+        <ProgressBar Grid.Row="1" x:Name="Progress" Height="12" Minimum="0" Maximum="100" Value="0" Margin="0,4"
                      Foreground="{StaticResource AccentBrush}" Background="#1F2937" BorderBrush="#223" BorderThickness="1"/>
 
-        <StackPanel Grid.Row="4" Orientation="Horizontal" VerticalAlignment="Center">
-            <TextBlock Text="Czas (MM:SS):" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#E6EDF3"/>
-            <TextBox x:Name="DurationTextBox" Width="90" Text="05:00" VerticalContentAlignment="Center" Margin="0,0,12,0"
-                     Background="#111827" Foreground="#E6EDF3" BorderBrush="#223"/>
-
-            <Button x:Name="StartStopButton" Content="Start" Width="110" Margin="0,0,8,0" Click="StartStopButton_Click"/>
-            <Button x:Name="ChooseSoundButton" Content="Wybierz piosenkę" Width="140" Click="ChooseSoundButton_Click"/>
+        <StackPanel Grid.Row="2" x:Name="ControlsPanel" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,4">
+            <TextBlock Text="Czas:" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#E6EDF3" FontSize="11"/>
+            <TextBox x:Name="DurationTextBox" Width="60" Text="05:00" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                     Background="#111827" Foreground="#E6EDF3" BorderBrush="#223" FontSize="11"/>
+            <Button x:Name="StartStopButton" Content="Start" Width="70" Margin="0,0,6,0" Click="StartStopButton_Click" FontSize="11"/>
+            <Button x:Name="ChooseSoundButton" Content="♪" Width="30" Click="ChooseSoundButton_Click" FontSize="11" ToolTip="Wybierz piosenkę"/>
         </StackPanel>
 
-        <StackPanel Grid.Row="6" Orientation="Horizontal" VerticalAlignment="Center">
-            <TextBlock x:Name="SoundPathText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Width="480" Foreground="#9BA3AF"/>
-        </StackPanel>
+        <TextBlock Grid.Row="3" x:Name="SoundPathText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="#9BA3AF" FontSize="9" Margin="0,2"/>
 
-        <Border x:Name="ConfirmBanner" Visibility="Collapsed"
-                Background="#7F1D1D" BorderBrush="#991B1B" BorderThickness="1" CornerRadius="10" Padding="10"
-                HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
-                Margin="0,0,0,0">
+        <!-- Baner potwierdzenia -->
+        <Border x:Name="ConfirmBanner" Grid.Row="0" Grid.RowSpan="4" Visibility="Collapsed"
+                Background="#7F1D1D" BorderBrush="#991B1B" BorderThickness="1" CornerRadius="8" Padding="8"
+                HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
             <DockPanel LastChildFill="True">
-                <TextBlock DockPanel.Dock="Left" Foreground="White" FontWeight="SemiBold" Text="Czas minął. Potwierdź." VerticalAlignment="Center"/>
-                <Button DockPanel.Dock="Right" x:Name="ConfirmButton" Content="Potwierdź" Width="110" Margin="12,0,0,0"
-                        Style="{StaticResource AccentButton}" Click="ConfirmButton_Click"/>
+                <Button DockPanel.Dock="Right" x:Name="ConfirmButton" Content="OK" Width="50" Margin="8,0,0,0"
+                        Style="{StaticResource AccentButton}" Click="ConfirmButton_Click" FontSize="11"/>
+                <TextBlock DockPanel.Dock="Left" Foreground="White" FontWeight="SemiBold" Text="Czas minął!" VerticalAlignment="Center" FontSize="11"/>
             </DockPanel>
         </Border>
     </Grid>
