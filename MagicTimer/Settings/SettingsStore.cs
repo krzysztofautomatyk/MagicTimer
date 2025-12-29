@@ -23,21 +23,57 @@ public sealed class SettingsStore
         try
         {
             if (!File.Exists(_path))
-                return new AppSettings();
+            {
+                var defaults = CreateDefaults();
+                Save(defaults);
+                return defaults;
+            }
 
             var json = File.ReadAllText(_path);
-            return JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
+            var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
+            
+            if (settings == null)
+            {
+                var defaults = CreateDefaults();
+                Save(defaults);
+                return defaults;
+            }
+
+            // Uzupe³nij brakuj¹ce wartoœci domyœlne
+            settings.TimerFontFamily ??= "Consolas";
+            settings.LastDuration ??= "05:00";
+
+            return settings;
         }
         catch
         {
-            return new AppSettings();
+            var defaults = CreateDefaults();
+            try { Save(defaults); } catch { /* ignore */ }
+            return defaults;
         }
     }
 
     public void Save(AppSettings settings)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(_path) ?? ".");
-        var json = JsonSerializer.Serialize(settings, JsonOptions);
-        File.WriteAllText(_path, json);
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_path) ?? ".");
+            var json = JsonSerializer.Serialize(settings, JsonOptions);
+            File.WriteAllText(_path, json);
+        }
+        catch
+        {
+            // best-effort
+        }
+    }
+
+    private static AppSettings CreateDefaults()
+    {
+        return new AppSettings
+        {
+            SoundFilePath = "",
+            LastDuration = "05:00",
+            TimerFontFamily = "Consolas"
+        };
     }
 }

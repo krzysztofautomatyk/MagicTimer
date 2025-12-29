@@ -1,6 +1,8 @@
 ﻿using System.IO;
 using System.Media;
 using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using MagicTimer.Settings;
 using Microsoft.Win32;
@@ -10,6 +12,7 @@ namespace MagicTimer
     public partial class MainWindow : Window
     {
         private static readonly TimeSpan MinimumDuration = TimeSpan.FromMinutes(1);
+        private static readonly TimeSpan BlinkThreshold = TimeSpan.FromSeconds(5);
 
         private readonly DispatcherTimer _tick;
         private readonly DispatcherTimer _confirmTimeout;
@@ -21,6 +24,7 @@ namespace MagicTimer
         private TimeSpan _initialDuration;
         private DateTimeOffset _endsAt;
         private bool _isRunning;
+        private bool _isBlinking;
 
         private int _remindCount;
 
@@ -39,6 +43,8 @@ namespace MagicTimer
                 DurationTextBox.Text = lastDuration;
 
             SoundPathText.Text = string.IsNullOrWhiteSpace(_settings.SoundFilePath) ? "(brak)" : _settings.SoundFilePath;
+
+            ApplyTimerFont();
 
             _tick = new DispatcherTimer(DispatcherPriority.Normal)
             {
@@ -101,6 +107,38 @@ namespace MagicTimer
             _settingsStore.Save(_settings);
 
             SoundPathText.Text = _settings.SoundFilePath;
+        }
+
+        private void ChooseFontButton_Click(object sender, RoutedEventArgs e)
+        {
+            var fontDialog = new FontPickerDialog(this, _settings.TimerFontFamily ?? "Consolas");
+            if (fontDialog.ShowDialog() != true)
+                return;
+
+            var selectedFont = fontDialog.SelectedFontFamily;
+            if (string.IsNullOrWhiteSpace(selectedFont))
+                return;
+
+            _settings.TimerFontFamily = selectedFont;
+            _settingsStore.Save(_settings);
+
+            ApplyTimerFont();
+        }
+
+        private void ApplyTimerFont()
+        {
+            var fontName = _settings.TimerFontFamily;
+            if (string.IsNullOrWhiteSpace(fontName))
+                fontName = "Consolas";
+
+            try
+            {
+                TimeText.FontFamily = new FontFamily(fontName);
+            }
+            catch
+            {
+                TimeText.FontFamily = new FontFamily("Consolas");
+            }
         }
 
         private void StartNewCountdown(TimeSpan duration)
@@ -176,6 +214,7 @@ namespace MagicTimer
             {
                 TimeText.Text = "00:00";
                 Progress.Value = 100;
+                StopBlinking();
                 OnCompleted();
                 return;
             }
@@ -191,6 +230,38 @@ namespace MagicTimer
             {
                 Progress.Value = 0;
             }
+
+            if (remaining <= BlinkThreshold && !_isBlinking)
+            {
+                StartBlinking();
+            }
+            else if (remaining > BlinkThreshold && _isBlinking)
+            {
+                StopBlinking();
+            }
+        }
+
+        private void StartBlinking()
+        {
+            if (_isBlinking)
+                return;
+
+            _isBlinking = true;
+            var storyboard = (Storyboard?)TryFindResource("BlinkAnimation");
+            storyboard?.Begin();
+        }
+
+        private void StopBlinking()
+        {
+            if (!_isBlinking)
+                return;
+
+            _isBlinking = false;
+            var storyboard = (Storyboard?)TryFindResource("BlinkAnimation");
+            storyboard?.Stop();
+
+            TimerBorder.Background = new System.Windows.Media.SolidColorBrush(
+                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#0F172A"));
         }
 
         private void OnCompleted()

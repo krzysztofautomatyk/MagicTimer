@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MagicTimer"
         mc:Ignorable="d"
-        Title="MagicTimer 1.0"
+        Title="MagicTimer 1.3"
         MinWidth="160" MinHeight="80"
         Width="520" Height="260"
         Topmost="True"
@@ -30,6 +30,14 @@
         <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
         </Style>
+
+        <Storyboard x:Key="BlinkAnimation" RepeatBehavior="Forever">
+            <ColorAnimationUsingKeyFrames Storyboard.TargetName="TimerBorder" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                <DiscreteColorKeyFrame KeyTime="0:0:0" Value="#0F172A"/>
+                <DiscreteColorKeyFrame KeyTime="0:0:0.5" Value="#7F1D1D"/>
+                <DiscreteColorKeyFrame KeyTime="0:0:1" Value="#0F172A"/>
+            </ColorAnimationUsingKeyFrames>
+        </Storyboard>
     </Window.Resources>
 
     <Grid Margin="8">
@@ -42,7 +50,7 @@
 
         <!-- Główny panel z czasem - skaluje się z oknem -->
         <Viewbox Grid.Row="0" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Border Background="#0F172A" BorderBrush="#223" BorderThickness="1" CornerRadius="8" Padding="12,8">
+            <Border x:Name="TimerBorder" Background="#0F172A" BorderBrush="#223" BorderThickness="1" CornerRadius="8" Padding="12,8">
                 <TextBlock x:Name="TimeText"
                            Text="00:00"
                            Foreground="#E6EDF3"
@@ -63,7 +71,8 @@
             <TextBox x:Name="DurationTextBox" Width="60" Text="05:00" VerticalContentAlignment="Center" Margin="0,0,8,0"
                      Background="#111827" Foreground="#E6EDF3" BorderBrush="#223" FontSize="11"/>
             <Button x:Name="StartStopButton" Content="Start" Width="70" Margin="0,0,6,0" Click="StartStopButton_Click" FontSize="11"/>
-            <Button x:Name="ChooseSoundButton" Content="♪" Width="30" Click="ChooseSoundButton_Click" FontSize="11" ToolTip="Wybierz piosenkę"/>
+            <Button x:Name="ChooseSoundButton" Content="♪" Width="30" Click="ChooseSoundButton_Click" FontSize="11" ToolTip="Wybierz piosenkę" Margin="0,0,2,0"/>
+            <Button x:Name="ChooseFontButton" Content="Aa" Width="30" Click="ChooseFontButton_Click" FontSize="11" ToolTip="Wybierz czcionkę" FontWeight="Bold"/>
         </StackPanel>
 
         <TextBlock Grid.Row="3" x:Name="SoundPathText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="#9BA3AF" FontSize="9" Margin="0,2"/>
