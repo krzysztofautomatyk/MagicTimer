@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MagicTimer"
         mc:Ignorable="d"
-        Title="MagicTimer 1.3"
+        Title="MagicTimer 1.4"
         MinWidth="160" MinHeight="80"
         Width="520" Height="260"
         Topmost="True"
@@ -25,10 +25,58 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Background" Value="#30363D"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#3D444D"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#282C34"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#1C1F26"/>
+                                <Setter Property="Foreground" Value="#6E7681"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#6CB6FF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#4A96E5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Storyboard x:Key="BlinkAnimation" RepeatBehavior="Forever">
@@ -67,12 +115,15 @@
                      Foreground="{StaticResource AccentBrush}" Background="#1F2937" BorderBrush="#223" BorderThickness="1"/>
 
         <StackPanel Grid.Row="2" x:Name="ControlsPanel" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,4">
-            <TextBlock Text="Czas:" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#E6EDF3" FontSize="11"/>
+            <TextBlock x:Name="TimeLabel" Text="Czas:" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#E6EDF3" FontSize="11"/>
             <TextBox x:Name="DurationTextBox" Width="60" Text="05:00" VerticalContentAlignment="Center" Margin="0,0,8,0"
                      Background="#111827" Foreground="#E6EDF3" BorderBrush="#223" FontSize="11"/>
             <Button x:Name="StartStopButton" Content="Start" Width="70" Margin="0,0,6,0" Click="StartStopButton_Click" FontSize="11"/>
             <Button x:Name="ChooseSoundButton" Content="♪" Width="30" Click="ChooseSoundButton_Click" FontSize="11" ToolTip="Wybierz piosenkę" Margin="0,0,2,0"/>
-            <Button x:Name="ChooseFontButton" Content="Aa" Width="30" Click="ChooseFontButton_Click" FontSize="11" ToolTip="Wybierz czcionkę" FontWeight="Bold"/>
+            <Button x:Name="ChooseFontButton" Content="Aa" Width="30" Click="ChooseFontButton_Click" FontSize="11" ToolTip="Wybierz czcionkę" FontWeight="Bold" Margin="0,0,2,0"/>
+            <Button x:Name="ChooseColorsButton" Content="🎨" Width="30" Click="ChooseColorsButton_Click" FontSize="11" ToolTip="Ustawienia kolorów" Margin="0,0,8,0"/>
+            <CheckBox x:Name="EnableRemindersCheckBox" Content="Przypomnienia" VerticalAlignment="Center" Foreground="#E6EDF3" FontSize="11" 
+                      IsChecked="True"/>
         </StackPanel>
 
         <TextBlock Grid.Row="3" x:Name="SoundPathText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="#9BA3AF" FontSize="9" Margin="0,2"/>

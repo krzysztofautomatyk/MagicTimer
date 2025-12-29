@@ -6,6 +6,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using MagicTimer.Settings;
 using Microsoft.Win32;
+using NAudio.Wave;
 
 namespace MagicTimer
 {
@@ -30,6 +31,9 @@ namespace MagicTimer
 
         private const double CompactHeight = 120;
 
+        private IWavePlayer? _audioPlayer;
+        private AudioFileReader? _audioFile;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -45,6 +49,7 @@ namespace MagicTimer
             SoundPathText.Text = string.IsNullOrWhiteSpace(_settings.SoundFilePath) ? "(brak)" : _settings.SoundFilePath;
 
             ApplyTimerFont();
+            ApplyColors();
 
             _tick = new DispatcherTimer(DispatcherPriority.Normal)
             {
@@ -64,7 +69,18 @@ namespace MagicTimer
             };
             _remind.Tick += (_, _) => OnRemindTick();
 
-            Closed += (_, _) => SaveLastDurationBestEffort();
+            Closed += (_, _) =>
+            {
+                StopSound();
+                SaveLastDurationBestEffort();
+            };
+
+            // Ustaw checkbox BEZ wywoływania eventu
+            EnableRemindersCheckBox.Checked -= EnableRemindersCheckBox_CheckedChanged;
+            EnableRemindersCheckBox.Unchecked -= EnableRemindersCheckBox_CheckedChanged;
+            EnableRemindersCheckBox.IsChecked = _settings.EnableReminders;
+            EnableRemindersCheckBox.Checked += EnableRemindersCheckBox_CheckedChanged;
+            EnableRemindersCheckBox.Unchecked += EnableRemindersCheckBox_CheckedChanged;
 
             SetIdleState();
             UpdateStartStopButton();
@@ -95,7 +111,7 @@ namespace MagicTimer
             var dialog = new OpenFileDialog
             {
                 Title = "Wybierz plik dźwiękowy",
-                Filter = "Audio (*.wav)|*.wav|All files (*.*)|*.*",
+                Filter = "Audio (*.wav;*.mp3)|*.wav;*.mp3|WAV (*.wav)|*.wav|MP3 (*.mp3)|*.mp3|All files (*.*)|*.*",
                 CheckFileExists = true,
                 Multiselect = false
             };
@@ -125,6 +141,16 @@ namespace MagicTimer
             ApplyTimerFont();
         }
 
+        private void ChooseColorsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var colorDialog = new ColorPickerDialog(this, _settings, () =>
+            {
+                _settingsStore.Save(_settings);
+                ApplyColors();
+            });
+            colorDialog.ShowDialog();
+        }
+
         private void ApplyTimerFont()
         {
             var fontName = _settings.TimerFontFamily;
@@ -139,6 +165,59 @@ namespace MagicTimer
             {
                 TimeText.FontFamily = new FontFamily("Consolas");
             }
+        }
+
+        private void ApplyColors()
+        {
+            try
+            {
+                // Tło okna
+                Background = new SolidColorBrush(ParseColor(_settings.BackgroundColor, "#0B0E14"));
+
+                // Tło i tekst zegarka
+                TimerBorder.Background = new SolidColorBrush(ParseColor(_settings.TimerBackgroundColor, "#0F172A"));
+                TimeText.Foreground = new SolidColorBrush(ParseColor(_settings.TimerForegroundColor, "#E6EDF3"));
+
+                // Progress bar
+                Progress.Foreground = new SolidColorBrush(ParseColor(_settings.ProgressBarColor, "#58A6FF"));
+
+                // Aktualizuj zasoby kolorów dla przycisków Start/Stop
+                Resources["StartBrush"] = new SolidColorBrush(ParseColor(_settings.StartButtonColor, "#2EA043"));
+                Resources["StopBrush"] = new SolidColorBrush(ParseColor(_settings.StopButtonColor, "#D73A49"));
+
+                // Kolory tekstu (labele)
+                var textColor = new SolidColorBrush(ParseColor(_settings.TextColor, "#E6EDF3"));
+                TimeLabel.Foreground = textColor;
+                SoundPathText.Foreground = textColor;
+                EnableRemindersCheckBox.Foreground = textColor;
+
+                // Tło i tekst inputa
+                var inputBg = new SolidColorBrush(ParseColor(_settings.InputBackgroundColor, "#111827"));
+                DurationTextBox.Background = inputBg;
+                DurationTextBox.Foreground = textColor;
+
+                // Baner potwierdzenia
+                ConfirmBanner.Background = new SolidColorBrush(ParseColor(_settings.BannerBackgroundColor, "#7F1D1D"));
+
+                // Zaktualizuj przycisk Start/Stop
+                UpdateStartStopButton();
+            }
+            catch
+            {
+                // best-effort
+            }
+        }
+
+        private static Color ParseColor(string colorText, string fallback)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(colorText))
+                    return (Color)ColorConverter.ConvertFromString(colorText);
+            }
+            catch { }
+
+            return (Color)ColorConverter.ConvertFromString(fallback);
         }
 
         private void StartNewCountdown(TimeSpan duration)
@@ -247,8 +326,21 @@ namespace MagicTimer
                 return;
 
             _isBlinking = true;
-            var storyboard = (Storyboard?)TryFindResource("BlinkAnimation");
-            storyboard?.Begin();
+            
+            // Utwórz dynamiczną animację z kolorami z ustawień
+            var normalColor = ParseColor(_settings.TimerBackgroundColor, "#0F172A");
+            var blinkColor = ParseColor(_settings.BlinkColor, "#7F1D1D");
+            
+            var animation = new ColorAnimationUsingKeyFrames
+            {
+                RepeatBehavior = RepeatBehavior.Forever
+            };
+            animation.KeyFrames.Add(new DiscreteColorKeyFrame(normalColor, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+            animation.KeyFrames.Add(new DiscreteColorKeyFrame(blinkColor, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.5))));
+            animation.KeyFrames.Add(new DiscreteColorKeyFrame(normalColor, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(1))));
+            
+            TimerBorder.Background = new SolidColorBrush(normalColor);
+            TimerBorder.Background.BeginAnimation(SolidColorBrush.ColorProperty, animation);
         }
 
         private void StopBlinking()
@@ -257,11 +349,9 @@ namespace MagicTimer
                 return;
 
             _isBlinking = false;
-            var storyboard = (Storyboard?)TryFindResource("BlinkAnimation");
-            storyboard?.Stop();
-
-            TimerBorder.Background = new System.Windows.Media.SolidColorBrush(
-                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#0F172A"));
+            
+            TimerBorder.Background.BeginAnimation(SolidColorBrush.ColorProperty, null);
+            TimerBorder.Background = new SolidColorBrush(ParseColor(_settings.TimerBackgroundColor, "#0F172A"));
         }
 
         private void OnCompleted()
@@ -275,21 +365,30 @@ namespace MagicTimer
 
             StartNewCountdown(nextDuration);
 
-            // baner i przypominanie dźwiękiem działają niezależnie od kolejnego odliczania
-            ConfirmBanner.Visibility = Visibility.Visible;
+            // baner i przypominanie dźwiękiem tylko gdy włączone
+            if (_settings.EnableReminders)
+            {
+                ConfirmBanner.Visibility = Visibility.Visible;
 
-            _confirmTimeout.Stop();
-            _confirmTimeout.Start();
+                _confirmTimeout.Stop();
+                _confirmTimeout.Start();
 
-            _remind.Stop();
-            _remindCount = 0;
-            _remind.Start();
+                _remind.Stop();
+                _remindCount = 0;
+                _remind.Start();
+            }
 
             PlaySoundBestEffort();
         }
 
         private void OnRemindTick()
         {
+            if (!_settings.EnableReminders)
+            {
+                _remind.Stop();
+                return;
+            }
+
             _remindCount++;
             if (_remindCount <= 3)
                 PlaySoundBestEffort();
@@ -344,12 +443,43 @@ namespace MagicTimer
         {
             try
             {
+                StopSound();
+
                 var path = _settings.SoundFilePath;
                 if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
                     return;
 
-                using var player = new SoundPlayer(path);
-                player.Play();
+                var extension = Path.GetExtension(path).ToLowerInvariant();
+
+                if (extension == ".wav")
+                {
+                    using var player = new SoundPlayer(path);
+                    player.Play();
+                }
+                else if (extension == ".mp3")
+                {
+                    _audioFile = new AudioFileReader(path);
+                    _audioPlayer = new WaveOutEvent();
+                    _audioPlayer.Init(_audioFile);
+                    _audioPlayer.Play();
+                }
+            }
+            catch
+            {
+                // best-effort
+            }
+        }
+
+        private void StopSound()
+        {
+            try
+            {
+                _audioPlayer?.Stop();
+                _audioPlayer?.Dispose();
+                _audioPlayer = null;
+
+                _audioFile?.Dispose();
+                _audioFile = null;
             }
             catch
             {
@@ -414,6 +544,28 @@ namespace MagicTimer
             Progress.Visibility = isCompact ? Visibility.Collapsed : Visibility.Visible;
             ControlsPanel.Visibility = isCompact ? Visibility.Collapsed : Visibility.Visible;
             SoundPathText.Visibility = isCompact ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private void EnableRemindersCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null || _settingsStore == null)
+                return;
+
+            _settings.EnableReminders = EnableRemindersCheckBox.IsChecked == true;
+            _settingsStore.Save(_settings);
+
+            // Jeśli przypomnienia są wyłączone podczas działania, zatrzymaj przypominanie i ukryj baner
+            if (!_settings.EnableReminders)
+            {
+                if (_remind != null)
+                {
+                    _remind.Stop();
+                    _remindCount = 0;
+                }
+                
+                // Ukryj baner potwierdzenia od razu
+                HideConfirmBanner();
+            }
         }
     }
 }
